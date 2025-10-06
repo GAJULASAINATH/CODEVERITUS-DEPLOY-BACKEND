@@ -1,0 +1,36 @@
+name: backend-deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  BUILD:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+      - name: Docker login
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build Docker image
+        run: docker build -t sainathdev7/CODEVERITUS-DEPLOY-BACKEND:latest .
+      - name: Push to Docker Hub
+        run: docker push sainathdev7/CODEVERITUS-DEPLOY-BACKEND:latest
+
+  DEPLOY:
+    needs: BUILD
+    runs-on: self-hosted
+    steps:
+      - name: Pull image from Docker Hub
+        run: docker pull sainathdev7/CODEVERITUS-DEPLOY-BACKEND:latest
+      - name: Delete old container
+        run: docker rm -f BACKEND-CONTAINER || true  # Added '|| true' to ignore if container doesn't exist
+      - name: Run container
+        run: |
+          docker run -d -p 4000:4000 --name BACKEND-CONTAINER \
+            -e MONGO_URI=${{ secrets.MONGO_URI }} \
+            -e CORE_API=${{ secrets.CORE_API }} \
+            -e SALTROUNDS=${{ secrets.SALTROUNDS }} \
+            -e JWT_SECRET_TOKEN=${{ secrets.JWT_SECRET_TOKEN }} \
+            sainathdev7/CODEVERITUS-DEPLOY-BACKEND:latest
