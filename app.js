@@ -23,7 +23,7 @@ app.use(
 );
 
 //PORT AVAILABILITY
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4000;
 
 const serverAndDatabaseConnection = async () => {
   try {
