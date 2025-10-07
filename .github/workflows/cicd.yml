@@ -34,10 +34,9 @@ jobs:
       - name: Run container (HTTPS enabled)
         run: |
           docker run -d \
-            -v /etc/letsencrypt/live/api.codeveritus.tech:/etc/letsencrypt/live/api.codeveritus.tech:ro \
-            -v /etc/letsencrypt/archive/api.codeveritus.tech:/etc/letsencrypt/archive/api.codeveritus.tech:ro \
-            -p 443:443 -p 80:80 \
             --name backend-container \
+            --network=codeveritus-network \
+            -p 4000:4000 \
             -e MONGO_URI="${{ secrets.MONGO_URI }}" \
             -e CORE_API="${{ secrets.CORE_API }}" \
             -e SALTROUNDS="${{ secrets.SALTROUNDS }}" \
