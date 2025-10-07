@@ -1,63 +1,63 @@
-//access credentials
-
-//All packages
+require("dotenv").config();
+const fs = require("fs");
+const https = require("https");
+const http = require("http");
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
-const bcrypt = require("bcrypt");
+const chokidar = require("chokidar");
 
-//routes
 const { connectDB } = require("./dbConnections/db");
 const usersRoute = require("./routes/usersRoutes");
 const adminsRoute = require("./routes/adminsRoutes");
 const jwtAuthenticator = require("./middleware/jwtAuthenticator");
 
-//MAIN APP
 const app = express();
 app.use(express.json());
+app.set("trust proxy", true);
 
-// Trust proxy (Nginx)
-app.set('trust proxy', true);
-
-// CORS configuration to enforce HTTPS
-app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin || origin.startsWith('https://codeveritus.tech')) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+app.use(
+  cors({
+    origin: (origin, cb) =>
+      !origin || origin.startsWith("https://codeveritus.tech")
+        ? cb(null, true)
+        : cb(new Error("CORS blocked")),
     credentials: true,
-}));
+  })
+);
 
-//PORT AVAILABILITY
-const PORT = process.env.PORT || 4000;
+app.get("/", (req, res) => res.send("✅ CODEVERITUS BACKEND (HTTPS active)"));
 
-const serverAndDatabaseConnection = async () => {
-    try {
-        await connectDB();
+app.use("/api/users", usersRoute);
+app.use("/api/admins", adminsRoute);
+app.use("/api/admins/fetch", jwtAuthenticator, adminsRoute);
 
-        //UNPROTEDTED ROUTES
-        app.use("/api/users", usersRoute);
-        app.use("/api/admins", adminsRoute);
+connectDB();
 
-        //PROTECTED ROUTES
-        app.use("/api/admins/fetch", jwtAuthenticator, adminsRoute);
-
-        app.listen(PORT, "0.0.0.0", () => { 
-            console.log(`✅ Server is running on port ${PORT}`);
-        });
-    } catch (error) {
-        console.log(`Database Error: ${error.message}`);
-        process.exit(1);
-    } finally {
-        console.log("Server initialization attempted.");
-    }
+// --- SSL CONFIG ---
+const CERT_PATH = "/etc/letsencrypt/live/api.codeveritus.tech";
+let sslOptions = {
+  key: fs.readFileSync(`${CERT_PATH}/privkey.pem`),
+  cert: fs.readFileSync(`${CERT_PATH}/fullchain.pem`),
 };
 
-//VISIT CODE
-app.get("/", (req, res) => {
-    res.send("CODEVERITUS-BACKEND");
+// Auto-reload on cert renewal
+chokidar.watch(CERT_PATH, { persistent: true }).on("change", () => {
+  console.log("🔁 Reloading renewed SSL certs...");
+  sslOptions = {
+    key: fs.readFileSync(`${CERT_PATH}/privkey.pem`),
+    cert: fs.readFileSync(`${CERT_PATH}/fullchain.pem`),
+  };
 });
-serverAndDatabaseConnection();
+
+// HTTPS server
+https.createServer(sslOptions, app).listen(443, "0.0.0.0", () => {
+  console.log("🚀 HTTPS server live on port 443");
+});
+
+// HTTP → HTTPS redirect
+http
+  .createServer((req, res) => {
+    res.writeHead(301, { Location: "https://" + req.headers.host + req.url });
+    res.end();
+  })
+  .listen(80, "0.0.0.0", () => console.log("↪ Redirecting HTTP → HTTPS"));
