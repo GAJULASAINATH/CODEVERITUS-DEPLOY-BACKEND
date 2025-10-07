@@ -35,6 +35,7 @@ jobs:
         run: |
           docker run -d \
             -v /etc/letsencrypt/live/api.codeveritus.tech:/etc/letsencrypt/live/api.codeveritus.tech:ro \
+            -v /etc/letsencrypt/archive/api.codeveritus.tech:/etc/letsencrypt/archive/api.codeveritus.tech:ro \
             -p 443:443 -p 80:80 \
             --name backend-container \
             -e MONGO_URI="${{ secrets.MONGO_URI }}" \
