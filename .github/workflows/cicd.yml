@@ -11,14 +11,17 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+
       - name: Docker login
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Build Docker image
         run: docker build -t sainathdev7/codeveritus-backend:latest .
+
       - name: Push to Docker Hub
         run: docker push sainathdev7/codeveritus-backend:latest
 
-    DEPLOY:
+  DEPLOY:
     needs: BUILD
     runs-on: self-hosted
     steps:
@@ -34,9 +37,8 @@ jobs:
             -v /etc/letsencrypt/live/api.codeveritus.tech:/etc/letsencrypt/live/api.codeveritus.tech:ro \
             -p 443:443 -p 80:80 \
             --name backend-container \
-            -e MONGO_URI=${{ secrets.MONGO_URI }} \
-            -e CORE_API=${{ secrets.CORE_API }} \
-            -e SALTROUNDS=${{ secrets.SALTROUNDS }} \
-            -e JWT_SECRET_TOKEN=${{ secrets.JWT_SECRET_TOKEN }} \
+            -e MONGO_URI="${{ secrets.MONGO_URI }}" \
+            -e CORE_API="${{ secrets.CORE_API }}" \
+            -e SALTROUNDS="${{ secrets.SALTROUNDS }}" \
+            -e JWT_SECRET_TOKEN="${{ secrets.JWT_SECRET_TOKEN }}" \
             sainathdev7/codeveritus-backend:latest
-
