@@ -39,11 +39,10 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/codeveritus-deploy
-            docker-compose down -v --remove-orphans
-            docker system prune -f
-            docker volume prune -f
+            docker-compose down -v --remove-orphans backend || true
+            docker rm -f codeveritus-backend || true
             docker-compose pull backend
-            docker-compose up -d --force-recreate --build backend
+            docker-compose up -d --force-recreate backend
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}
           PORT: ${{ secrets.PORT }}
