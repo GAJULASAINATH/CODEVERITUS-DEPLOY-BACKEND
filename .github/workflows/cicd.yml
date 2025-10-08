@@ -30,6 +30,17 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
             cd /home/ubuntu/codeveritus-deploy
+
+            echo "🛠 Pulling latest Docker images..."
             docker-compose pull backend
+
+            echo "🚀 Recreating backend container..."
             docker-compose up -d --force-recreate backend
+
+            echo "🧹 Cleaning up old images, containers, and volumes..."
+            docker system prune -af --volumes
+
+            echo "✅ Deployment complete!"
+            docker ps
